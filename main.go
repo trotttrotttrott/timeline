@@ -32,13 +32,42 @@ func (ev *Event) Data() string {
 	return ""
 }
 
-func (ev *Event) Metadata(evPrev *Event) string {
+func (ev *Event) Metadata(evPrev *Event, evNext *Event) string {
 	str := ev.Date.Format("2006-01-02")
+	if evNext != nil {
+		months := ev.TimeDiff(evNext)
+		years := months / 12
+		months = months % 12
+		var diff []string
+		switch years {
+		case 0:
+		case 1:
+			diff = append(diff, fmt.Sprintf("%d year", years))
+		default:
+			diff = append(diff, fmt.Sprintf("%d years", years))
+		}
+		switch months {
+		case 0:
+		case 1:
+			diff = append(diff, fmt.Sprintf("%d month", months))
+		default:
+			diff = append(diff, fmt.Sprintf("%d months", months))
+		}
+		if len(diff) > 0 {
+			str += fmt.Sprintf("; %s", strings.Join(diff, ", "))
+		}
+	}
 	if ev.Number != nil && evPrev != nil {
 		diff := *ev.Number - *evPrev.Number
 		str += fmt.Sprintf("; %.2f; %.1f%%", diff, (diff / *evPrev.Number)*100)
 	}
 	return str
+}
+
+func (ev *Event) TimeDiff(evOther *Event) int {
+	years := evOther.Date.Year() - ev.Date.Year()
+	months := int(evOther.Date.Month()) - int(ev.Date.Month())
+	return years*12 + months
 }
 
 func main() {
@@ -86,12 +115,7 @@ func main() {
 		// intervals are the number of months between events
 		intervals := make([]int, len(events)-1)
 		for i := range len(intervals) {
-			ev := events[i]
-			nextEv := events[i+1]
-			yearDiff := nextEv.Date.Year() - ev.Date.Year()
-			monthDiff := int(nextEv.Date.Month()) - int(ev.Date.Month())
-			months := yearDiff*12 + monthDiff
-			intervals[i] = months
+			intervals[i] = events[i].TimeDiff(&events[i+1])
 		}
 
 		for i, event := range events {
@@ -122,11 +146,14 @@ func main() {
 				metadataLines[i] = dataLines[j]
 
 				if isEvtLine {
-					var evPrev *Event
+					var evPrev, evNext *Event
 					if i > 0 {
 						evPrev = &events[i-1]
 					}
-					metadataLines[i] += fmt.Sprintf("┌ %s", event.Metadata(evPrev))
+					if i+1 < len(events) {
+						evNext = &events[i+1]
+					}
+					metadataLines[i] += fmt.Sprintf("┌ %s", event.Metadata(evPrev, evNext))
 					dataLines[j] += fmt.Sprintf("└ %s", event.Data())
 				}
 			}
