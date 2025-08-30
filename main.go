@@ -21,13 +21,23 @@ type Event struct {
 	Number *float64
 }
 
-func (ev *Event) ToString() string {
+func (ev *Event) ToString(mode string) string {
 
 	switch {
 	case ev.String != nil:
-		return *ev.String
+		switch mode {
+		case "data":
+			return *ev.String
+		case "metadata":
+			return ev.Date.Format("2006-01-02")
+		}
 	case ev.Number != nil:
-		return fmt.Sprint(*ev.Number)
+		switch mode {
+		case "data":
+			return fmt.Sprint(*ev.Number)
+		case "metadata":
+			return ev.Date.Format("2006-01-02")
+		}
 	}
 
 	return ""
@@ -67,13 +77,16 @@ func main() {
 
 		now := "now"
 		events = append(events, Event{Date: time.Now(), String: &now})
-		intervals := make([]int, len(events)-1)
-		lines := make([]string, len(events)+1)
-		for i := range lines[1:] {
-			lines[i] = "│"
+
+		centerLine := "│"
+		dataLines := make([]string, len(events))
+		metadataLines := make([]string, len(events))
+		for i := range dataLines[1:] {
+			dataLines[i] = "│"
 		}
 
 		// intervals are the number of months between events
+		intervals := make([]int, len(events)-1)
 		for i := range len(intervals) {
 			ev := events[i]
 			nextEv := events[i+1]
@@ -86,11 +99,11 @@ func main() {
 		for i, event := range events {
 
 			if i < len(intervals) {
-				lines[0] += strings.Repeat("-", max(0, intervals[i]-1))
-				lines[0] += "│"
+				centerLine += strings.Repeat("-", max(0, intervals[i]-1))
+				centerLine += "│"
 			}
 
-			for j := range lines[1:] {
+			for j := range len(events) {
 
 				// break if this line (and ones after) are done
 				if j > len(events)-1-i {
@@ -102,22 +115,27 @@ func main() {
 				isEvtLine := j == inverseIdx
 				isNextEvtLine := j+1 == inverseIdx
 
-				line := &lines[j+1]
 				if len(intervals) > i && !isEvtLine {
-					*line += strings.Repeat(" ", max(0, intervals[i]-1))
+					dataLines[j] += strings.Repeat(" ", max(0, intervals[i]-1))
 					if !isNextEvtLine {
-						*line += "│"
+						dataLines[j] += "│"
 					}
 				}
+				metadataLines[i] = dataLines[j]
 
 				if isEvtLine {
-					*line += fmt.Sprintf("└ %s", event.ToString())
+					metadataLines[i] += fmt.Sprintf("┌ %s", event.ToString("metadata"))
+					dataLines[j] += fmt.Sprintf("└ %s", event.ToString("data"))
 				}
 			}
 		}
 
-		for i := range lines {
-			fmt.Println(lines[i])
+		for _, line := range metadataLines {
+			fmt.Println(line)
+		}
+		fmt.Println(centerLine)
+		for _, line := range dataLines {
+			fmt.Println(line)
 		}
 	}
 }
