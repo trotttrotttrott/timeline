@@ -21,26 +21,23 @@ type Event struct {
 	Number *float64
 }
 
-func (ev *Event) ToString(mode string) string {
-
+func (ev *Event) Data() string {
 	switch {
 	case ev.String != nil:
-		switch mode {
-		case "data":
-			return *ev.String
-		case "metadata":
-			return ev.Date.Format("2006-01-02")
-		}
+		return *ev.String
 	case ev.Number != nil:
-		switch mode {
-		case "data":
-			return fmt.Sprint(*ev.Number)
-		case "metadata":
-			return ev.Date.Format("2006-01-02")
-		}
+		return fmt.Sprint(*ev.Number)
 	}
-
 	return ""
+}
+
+func (ev *Event) Metadata(evPrev *Event) string {
+	str := ev.Date.Format("2006-01-02")
+	if ev.Number != nil && evPrev != nil {
+		diff := *ev.Number - *evPrev.Number
+		str += fmt.Sprintf("; %.2f; %.1f%%", diff, (diff / *evPrev.Number)*100)
+	}
+	return str
 }
 
 func main() {
@@ -124,8 +121,12 @@ func main() {
 				metadataLines[i] = dataLines[j]
 
 				if isEvtLine {
-					metadataLines[i] += fmt.Sprintf("┌ %s", event.ToString("metadata"))
-					dataLines[j] += fmt.Sprintf("└ %s", event.ToString("data"))
+					var evPrev *Event
+					if i > 0 {
+						evPrev = &events[i-1]
+					}
+					metadataLines[i] += fmt.Sprintf("┌ %s", event.Metadata(evPrev))
+					dataLines[j] += fmt.Sprintf("└ %s", event.Data())
 				}
 			}
 		}
