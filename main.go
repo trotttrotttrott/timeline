@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/fatih/color"
 	"gopkg.in/yaml.v3"
 )
 
@@ -131,8 +132,9 @@ func main() {
 			}
 		}
 
+		faint := color.New(color.Faint)
 		for _, line := range metadataLines {
-			fmt.Println(line)
+			faint.Println(line)
 		}
 		fmt.Println(centerLine)
 		for _, line := range dataLines {
