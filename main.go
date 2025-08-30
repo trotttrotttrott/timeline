@@ -86,7 +86,7 @@ func main() {
 		for i, event := range events {
 
 			if i < len(intervals) {
-				lines[0] += strings.Repeat("-", intervals[i]-1)
+				lines[0] += strings.Repeat("-", max(0, intervals[i]-1))
 				lines[0] += "│"
 			}
 
@@ -104,7 +104,7 @@ func main() {
 
 				line := &lines[j+1]
 				if len(intervals) > i && !isEvtLine {
-					*line += strings.Repeat(" ", intervals[i]-1)
+					*line += strings.Repeat(" ", max(0, intervals[i]-1))
 					if !isNextEvtLine {
 						*line += "│"
 					}
